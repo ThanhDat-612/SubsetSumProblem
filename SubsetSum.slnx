@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="SubsetSum/SubsetSum.vcxproj" Id="15b635bc-905b-490e-b0a9-c832d83c0276" />
+</Solution>

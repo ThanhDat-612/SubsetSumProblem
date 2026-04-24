@@ -1,0 +1,52 @@
+# =========================
+# Visual Studio
+# =========================
+.vs/
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+Debug/
+Release/
+x64/
+x86/
+build/
+out/
+
+# Compiled files
+*.obj
+*.o
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+
+# Logs
+*.log
+
+# =========================
+# CMake (nếu có dùng)
+# =========================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Other
+# =========================
+*.tmp
+*.temp
+*.swp
+.DS_Store
+Thumbs.db
