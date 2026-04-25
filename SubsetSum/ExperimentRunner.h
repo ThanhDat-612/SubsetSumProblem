@@ -38,7 +38,7 @@ private:
 
     // Chạy thí nghiệm 1: dataset tĩnh do người dùng định nghĩa
     void runStaticExperiments() {
-        cout << "\n─── Thi nghiem 1: Dataset tinh ───\n";
+        cout << "\n--- Thi nghiem 1: Dataset tinh ---\n";
 
         vector<Dataset> datasets = {
             DataLoader::loadFromVector({3, 1, 4, 1, 5, 9, 2, 6}, 10,   "small_found"),
@@ -53,7 +53,7 @@ private:
 
     // Chạy thí nghiệm 2: benchmark tăng dần kích thước
     void runScalingBenchmark() {
-        cout << "\n─── Thi nghiem 2: Scaling Benchmark (n tang dan) ───\n";
+        cout << "\n--- Thi nghiem 2: Scaling Benchmark (n tang dan) ---\n";
 
         // BruteForce / Backtracking chỉ dùng được n <= 25
         vector<int> sizes = { 8, 12, 16, 20, 24 };
@@ -69,7 +69,7 @@ private:
 
     // Chạy thí nghiệm 3: trường hợp vô nghiệm
     void runNoSolutionBenchmark() {
-        cout << "\n─── Thi nghiem 3: Vo nghiem (worst case) ───\n";
+        cout << "\n--- Thi nghiem 3: Vo nghiem (worst case) ---\n";
 
         vector<Dataset> datasets;
         for (int n : {8, 12, 16, 20}) {

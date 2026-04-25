@@ -17,13 +17,13 @@
 class DataLoader {
 public:
     // Đọc từ file
-    static Dataset loadFromFile(const string& , const string&);
+    static Dataset loadFromFile(const string& filepath, const string& name = "");
 
     // Đọc từ stdin
     static Dataset loadFromStdin();
 
     // Đọc từ vector trực tiếp (tiện cho test)
-    static Dataset loadFromVector(const vector<long long>& ,long long , const string& );
+    static Dataset loadFromVector(const vector<long long>& elements, long long target, const string& name = "manual");
 
     // Lưu dataset ra file
     static void saveToFile(const Dataset& , const string& );
@@ -43,7 +43,8 @@ public:
     explicit DataGenerator(uint64_t seed) : rng_(seed) {}
     // Tạo dataset ngẫu nhiên: n phần tử trong [minVal, maxVal]
     // Target là tổng của k phần tử bất kỳ (đảm bảo có nghiệm)
-    Dataset generate(int , long long , long long ,int,const string&);
+    Dataset generate(int n, long long minVal, long long maxVal, int guaranteedSubsetSize = 3,
+        const string& name = "generated");
 
     // Tạo dataset không có nghiệm (target rất lớn)
     Dataset generateNoSolution(int n, long long minVal, long long maxVal,

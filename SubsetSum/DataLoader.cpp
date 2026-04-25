@@ -1,7 +1,7 @@
 ﻿#include "DataLoader.h"
 
 // Class DataLoader
-Dataset DataLoader::loadFromFile(const string& filepath, const string& name="") {
+Dataset DataLoader::loadFromFile(const string& filepath, const string& name) {
     ifstream fin(filepath);
     if (!fin.is_open())
         throw runtime_error("[DataLoader] Khong mo duoc file: " + filepath);
@@ -37,7 +37,7 @@ Dataset DataLoader::loadFromStdin() {
 }
 
 Dataset DataLoader::loadFromVector(const vector<long long>& elements, long long target,
-			const string& name="manual") {
+			const string& name) {
     return Dataset(elements, target, name);
 }
 
@@ -60,7 +60,7 @@ DataGenerator::DataGenerator() {
 }
 
 Dataset DataGenerator::generate(int n, long long minVal, long long maxVal,
-	int guaranteedSubsetSize = 3, const string& name="generated") {
+	int guaranteedSubsetSize, const string& name) {
     if (n <= 0)     throw invalid_argument("[DataGenerator] n phai > 0");
     if (minVal > maxVal) throw invalid_argument("[DataGenerator] minVal > maxVal");
     if (guaranteedSubsetSize > n)
@@ -81,7 +81,7 @@ Dataset DataGenerator::generate(int n, long long minVal, long long maxVal,
 }
 
 Dataset DataGenerator::generateNoSolution(int n, long long minVal, long long maxVal,
-	const string& name="no_solution") {
+	const string& name) {
     uniform_int_distribution<long long> dist(minVal, maxVal);
     vector<long long> elements(n);
     long long totalSum = 0;

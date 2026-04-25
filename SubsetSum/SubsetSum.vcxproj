@@ -127,12 +127,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AppUI.cpp" />
     <ClCompile Include="BacktrackingSolver.cpp" />
     <ClCompile Include="BruteforceSolver.cpp" />
     <ClCompile Include="DataLoader.cpp" />
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="DynamicProgrammingSolver.cpp" />
     <ClCompile Include="ExperimentRunner.cpp" />
+    <ClCompile Include="InteractiveCLI.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MeetInTheMiddleSolver.cpp" />
     <ClCompile Include="PerformanceAnalyzer.cpp" />
@@ -140,12 +142,14 @@
     <ClCompile Include="SubsetSumSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AppUI.h" />
     <ClInclude Include="BacktrackingSolver.h" />
     <ClInclude Include="BruteforceSolver.h" />
     <ClInclude Include="DataLoader.h" />
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="DynamicProgrammingSolver.h" />
     <ClInclude Include="ExperimentRunner.h" />
+    <ClInclude Include="InteractiveCLI.h" />
     <ClInclude Include="MeetInTheMiddleSolver.h" />
     <ClInclude Include="PerformanceAnalyzer.h" />
     <ClInclude Include="resource.h" />

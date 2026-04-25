@@ -1,11 +1,11 @@
-#include "ExperimentRunner.h"
+#include "InteractiveCLI.h"
 
 int main() {
     std::ios_base::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    ExperimentRunner runner;
-    runner.runAll();
+    InteractiveCLI app;
+    app.run();
 
     return 0;
 }

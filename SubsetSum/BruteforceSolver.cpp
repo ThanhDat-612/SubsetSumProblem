@@ -4,23 +4,35 @@ Solution BruteForceSolver::doSolve(const Dataset& ds){
     const auto& elems = ds.elements();
     int n = ds.size();
     long long target = ds.target();
+    
+    vector<vector<long long>> allChosen;
+    vector<vector<int>> allIndices;
+    vector<long long> currentChosen;
+    vector<int> currentIndices;
 
-    int total = (1 << n); // chỉ dùng được khi n <= 30
-    for (int mask = 0; mask < total; ++mask) {
-        long long sum = 0;
-        vector<int> indices;
-        vector<long long> chosen;
-
-        for (int i = 0; i < n; ++i) {
-            if (mask & (1 << i)) {
-                sum += elems[i];
-                indices.push_back(i);
-                chosen.push_back(elems[i]);
+    function<void(int, long long)> dfs = [&](int idx, long long sum) {
+        if (idx == n) {
+            if (sum == target) {
+                allChosen.push_back(currentChosen);
+                allIndices.push_back(currentIndices);
             }
+            return;
         }
-        if (sum == target)
-            return Solution::makeFound(target, chosen, indices);
-    }
-    return Solution::makeNotFound(target);
+        currentChosen.push_back(elems[idx]);
+        currentIndices.push_back(idx);
+        dfs(idx + 1, sum + elems[idx]);
+        currentIndices.pop_back();
+        currentChosen.pop_back();
+
+        // Bỏ qua phần tử hiện tại
+        dfs(idx + 1, sum);
+        };
+
+    dfs(0, 0LL);
+
+    if (allChosen.empty())
+        return Solution::makeNotFound(target);
+
+    return Solution::makeFoundAll(target, allChosen, allIndices);
 }
 

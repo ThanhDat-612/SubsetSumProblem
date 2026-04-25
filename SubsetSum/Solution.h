@@ -18,7 +18,9 @@ private:
     long long target_;
     vector<long long> chosenElements_;  // Các phần tử trong tập con
     vector<int> chosenIndices_;   // Chỉ số trong mảng gốc
-    long long actualSum_;
+    vector<vector<long long>> allChosenElements_;
+    vector<vector<int>> allChosenIndices_;
+    long long actualSum_;   
     string solverName_;
     double  elapsedMs_;       // Thời gian chạy (ms)
 
@@ -32,8 +34,10 @@ public:
     // --- Builders ---
     static Solution makeFound(long long,const vector<long long>& ,const vector<int>& , const string& solverName = "");
     
-    static Solution makeNotFound(long long, const string& solverName = "");
+    static Solution makeFoundAll(long long, const vector<vector<long long>>&,
+        const vector<vector<int>>&, const string& solverName = "");
 
+    static Solution makeNotFound(long long, const string& solverName = "");
     // --- Getters ---
     bool   found()          const { return status_ == Status::FOUND; }
     Status status()         const { return status_; }
@@ -43,7 +47,9 @@ public:
     const string& solverName()        const { return solverName_; }
     const vector<long long>& elements() const { return chosenElements_; }
     const vector<int>& indices()   const { return chosenIndices_; }
-
+    const vector<vector<long long>>& allElements() const { return allChosenElements_; }
+    const vector<vector<int>>& allIndices() const { return allChosenIndices_; }
+    size_t solutionCount() const { return allChosenIndices_.size(); }
     // --- Setters ---
     void setElapsedMs(double ms) { elapsedMs_ = ms; }
     void setSolverName(const string& n) { solverName_ = n; }
