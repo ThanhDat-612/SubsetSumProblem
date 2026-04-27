@@ -50,31 +50,36 @@ protected:
         auto leftEntries = generateAll(elems, 0, mid);
         auto rightEntries = generateAll(elems, mid, n);
 
-        // Build map: rightSum → index trong rightEntries
-        unordered_map<long long, int> rightMap;
+        // Build map: danh sach index trong rightEntries
+        unordered_map<long long, vector<int>> rightMap;
         rightMap.reserve(rightEntries.size());
         for (int i = 0; i < (int)rightEntries.size(); ++i)
-            rightMap[rightEntries[i].sum] = i;
+            rightMap[rightEntries[i].sum].push_back(i);
+
+        vector<vector<long long>> allChosen;
+        vector<vector<int>> allIndices;
 
         // Duyệt nửa trái, tìm complement trong nửa phải
         for (const auto& le : leftEntries) {
             long long need = target - le.sum;
             auto it = rightMap.find(need);
             if (it != rightMap.end()) {
-                const auto& re = rightEntries[it->second];
-
-                // Ghép indices và elements
-                vector<int>       indices = le.indices;
-                vector<long long> chosen;
-                for (int i : le.indices) chosen.push_back(elems[i]);
-
-                for (int i : re.indices) {
-                    indices.push_back(i);
-                    chosen.push_back(elems[i]);
+                for (int idx : it->second) {
+                    const auto& re = rightEntries[idx];
+                    vector<int>       indices = le.indices;
+                    vector<long long> chosen;
+                    for (int i : le.indices) chosen.push_back(elems[i]);
+                    for (int i : re.indices) {
+                        indices.push_back(i);
+                        chosen.push_back(elems[i]);
+                    }
+                    allIndices.push_back(std::move(indices));
+                    allChosen.push_back(std::move(chosen));
                 }
-                return Solution::makeFound(target, chosen, indices);
             }
         }
+        if (!allChosen.empty())
+            return Solution::makeFoundAll(target, allChosen, allIndices);
         return Solution::makeNotFound(target);
     }
 

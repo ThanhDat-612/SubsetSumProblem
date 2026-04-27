@@ -3,53 +3,60 @@
 
 // ============================================================
 // Class: BacktrackingSolver
-// Backtracking với pruning: dừng sớm khi không thể cải thiện
-// Complexity: O(2^n) worst case, thực tế nhanh hơn nhiều
+// Backtracking voi pruning
+// Complexity: O(2^n) worst case
+// FIX: pruning chinh xac cho ca so am va so duong
 // ============================================================
 class BacktrackingSolver : public SubsetSumSolver {
 private:
-    // Trạng thái tìm kiếm
     struct SearchState {
         const vector<long long>& elems;
         long long target;
-        vector<int>       currentIndices;
-        vector<long long> currentChosen;
-        bool found = false;
+        vector<int>               currentIndices;
+        vector<long long>         currentChosen;
+        vector<vector<int>>       allIndices;
+        vector<vector<long long>> allChosen;
 
-        // Tổng tối đa có thể thêm từ idx trở đi (prefix sum suffix)
-        vector<long long> suffixSum; // suffixSum[i] = sum(elems[i..n-1])
+        // suffixMaxPos[i] = tong cac so duong trong elems[i..n-1]
+        // suffixMinNeg[i] = tong cac so am trong elems[i..n-1]
+        vector<long long> suffixMaxPos;
+        vector<long long> suffixMinNeg;
 
         SearchState(const vector<long long>& e, long long t)
             : elems(e), target(t) {
             int n = (int)e.size();
-            suffixSum.resize(n + 1, 0);
-            for (int i = n - 1; i >= 0; --i)
-                suffixSum[i] = suffixSum[i + 1] + (e[i] > 0 ? e[i] : 0);
+            suffixMaxPos.resize(n + 1, 0);
+            suffixMinNeg.resize(n + 1, 0);
+            for (int i = n - 1; i >= 0; --i) {
+                suffixMaxPos[i] = suffixMaxPos[i + 1] + (e[i] > 0 ? e[i] : 0);
+                suffixMinNeg[i] = suffixMinNeg[i + 1] + (e[i] < 0 ? e[i] : 0);
+            }
         }
     };
 
     void backtrack(SearchState& state, int idx, long long currentSum) {
-        if (state.found) return;
         if (currentSum == state.target) {
-            state.found = true;
-            return;
+            state.allIndices.push_back(state.currentIndices);
+            state.allChosen.push_back(state.currentChosen);
         }
         if (idx == (int)state.elems.size()) return;
 
-        // Pruning: ngay cả khi chọn hết phần tử dương cũng không đủ
-        if (currentSum + state.suffixSum[idx] < state.target) return;
+        // Pruning: kiem tra khoang co the dat duoc tu idx tro di
+        // max co the dat = currentSum + tong so duong con lai
+        // min co the dat = currentSum + tong so am con lai
+        long long maxReachable = currentSum + state.suffixMaxPos[idx];
+        long long minReachable = currentSum + state.suffixMinNeg[idx];
+        if (state.target > maxReachable || state.target < minReachable) return;
 
-        // Nhánh: CHỌN phần tử idx
+        // Nhanh: CHON phan tu idx
         state.currentIndices.push_back(idx);
         state.currentChosen.push_back(state.elems[idx]);
         backtrack(state, idx + 1, currentSum + state.elems[idx]);
+        state.currentIndices.pop_back();
+        state.currentChosen.pop_back();
 
-        if (!state.found) {
-            state.currentIndices.pop_back();
-            state.currentChosen.pop_back();
-            // Nhánh: KHÔNG chọn phần tử idx
-            backtrack(state, idx + 1, currentSum);
-        }
+        // Nhanh: KHONG chon phan tu idx
+        backtrack(state, idx + 1, currentSum);
     }
 
 protected:
@@ -57,10 +64,8 @@ protected:
         SearchState state(ds.elements(), ds.target());
         backtrack(state, 0, 0);
 
-        if (state.found)
-            return Solution::makeFound(ds.target(),
-                state.currentChosen,
-                state.currentIndices);
+        if (!state.allChosen.empty())
+            return Solution::makeFoundAll(ds.target(), state.allChosen, state.allIndices);
         return Solution::makeNotFound(ds.target());
     }
 

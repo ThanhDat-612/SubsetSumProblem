@@ -1,7 +1,7 @@
 ﻿#include "Solution.h"
 
 Solution Solution::makeFound(ll target, const vector<ll>& elements,
-				const vector<int>& indices, const string& solverName) {
+    const vector<int>& indices, const string& solverName) {
     Solution s;
     s.status_ = Status::FOUND;
     s.target_ = target;
@@ -13,6 +13,7 @@ Solution Solution::makeFound(ll target, const vector<ll>& elements,
     s.allChosenIndices_.push_back(indices);
     return s;
 }
+
 Solution Solution::makeFoundAll(long long target,
     const vector<vector<long long>>& allElements,
     const vector<vector<int>>& allIndices,
@@ -34,22 +35,20 @@ Solution Solution::makeFoundAll(long long target,
     }
     return s;
 }
+
 Solution Solution::makeNotFound(long long target, const string& solverName) {
     Solution s;
     s.status_ = Status::NOT_FOUND;
     s.target_ = target;
     s.actualSum_ = 0;
     s.solverName_ = solverName;
-    s.allChosenElements_.clear();
-    s.allChosenIndices_.clear();
     return s;
 }
 
-bool Solution::validate()const {
-    if (!found()) return true; // NOT_FOUND không cần validate
+bool Solution::validate() const {
+    if (!found()) return true;
     if (allChosenElements_.empty())
         return actualSum_ == target_;
-
     for (const auto& subset : allChosenElements_) {
         long long sum = accumulate(subset.begin(), subset.end(), 0LL);
         if (sum != target_) return false;
@@ -57,7 +56,7 @@ bool Solution::validate()const {
     return actualSum_ == target_;
 }
 
-void Solution::print()const {
+void Solution::print() const {
     cout << " [Solution] Solver: " << solverName_ << "\n";
     if (status_ == Status::NOT_RUN) {
         cout << "  Chua chay.\n---\n";
@@ -69,23 +68,16 @@ void Solution::print()const {
     else {
         cout << "  Ket qua: TIM THAY\n"
             << "  Target : " << target_ << "\n"
-            << "  Subset : { "
-            << "  So nghiem: " << solutionCount() << "\n"
-            << "  Subset dau tien: { ";
-        for (auto x : chosenElements_) cout << x << " ";
-        cout << "}\n"
-            << "  Indices: [ ";
-        for (auto i : chosenIndices_) cout << i << " ";
-        cout << "]\n"
-            << "  Sum    : " << actualSum_
-            << (validate() ? "  OK" : "   SAI!") << "\n";
+            << "  So nghiem: " << solutionCount() << "\n";
         for (size_t k = 0; k < allChosenElements_.size(); ++k) {
             cout << "    #" << (k + 1) << ": { ";
             for (auto x : allChosenElements_[k]) cout << x << " ";
-            cout << "} [ ";
+            cout << "} Indices: [ ";
             for (auto idx : allChosenIndices_[k]) cout << idx << " ";
             cout << "]\n";
         }
+        cout << "  Sum    : " << actualSum_
+            << (validate() ? "  OK" : "  SAI!") << "\n";
     }
     cout << "  Thoi gian: " << elapsedMs_ << " ms\n---\n";
 }

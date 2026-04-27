@@ -7,6 +7,7 @@
 #include "BacktrackingSolver.h"
 #include "DynamicProgrammingSolver.h"
 #include "MeetInTheMiddleSolver.h"
+#include "GreedySolver.h"
 #include "PerformanceAnalyzer.h"
 #include <memory>
 #include <vector>
@@ -27,6 +28,7 @@ private:
         analyzer_.addSolver(make_shared<BacktrackingSolver>());
         analyzer_.addSolver(make_shared<DynamicProgrammingSolver>());
         analyzer_.addSolver(make_shared<MeetInTheMiddleSolver>());
+        analyzer_.addSolver(make_shared<GreedySolver>());
     }
 
     void printBanner() const {

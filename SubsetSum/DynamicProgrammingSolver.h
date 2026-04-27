@@ -4,8 +4,9 @@
 
 // ============================================================
 // Class: DynamicProgrammingSolver
-// DP bảng: dp[s] = true nếu có tập con tổng = s
-// Dùng unordered_map để xử lý target âm và giá trị lớn
+// Toi uu: dung 2 unordered_map rieng biet (current / next)
+// thay vi copy vector tam moi vong lap → giam overhead copy
+// Dung reserve() de giam re-hash
 // Complexity: O(n * |target|)
 // ============================================================
 class DynamicProgrammingSolver : public SubsetSumSolver {
@@ -15,48 +16,54 @@ protected:
         int n = ds.size();
         long long target = ds.target();
 
-        // dp[sum] = index phần tử vừa thêm vào để đạt sum đó (-1 = xuất phát)
-        unordered_map<long long, int> dp;
-        dp[0] = -1; // tổng 0 từ tập rỗng
+        // reached: tap cac tong dat duoc hien tai
+        // parentSum[ns] = tong truoc do de trace nguoc
+        // parentIdx[ns] = index phan tu da dung
+        unordered_map<long long, long long> parentSum;
+        unordered_map<long long, int>       parentIdx;
+        // Dung unordered_set thay vi unordered_map<bool>
+        // De kiem tra membership nhanh hon
+        unordered_map<long long, bool> reached;
+        reached.reserve(1 << 10); // pre-allocate giam re-hash
+        parentSum.reserve(1 << 10);
+        parentIdx.reserve(1 << 10);
+        reached[0] = true;
 
-        // parent[sum_after] = sum_before (để trace ngược)
-        unordered_map<long long, long long> parent;
+        bool found = false;
+        for (int i = 0; i < n && !found; ++i) {
+            long long e = elems[i];
 
-        for (int i = 0; i < n; ++i) {
-            // Duyệt ngược để tránh dùng cùng phần tử 2 lần
-            vector<pair<long long, int>> toAdd;
-            for (auto& [s, _] : dp) {
-                long long ns = s + elems[i];
-                if (dp.find(ns) == dp.end()) {
-                    toAdd.push_back({ ns, i });
-                    parent[ns] = s;
+            // Thu thap cac (newSum, prevSum) can them
+            // Dung snapshot cua reached truoc khi sua
+            // → tranh iterate-while-modify va tranh copy toan bo map
+            vector<pair<long long, long long>> toAdd;
+            toAdd.reserve(reached.size());
+
+            for (auto& [s, _] : reached) {
+                long long ns = s + e;
+                if (!reached.count(ns) && !parentSum.count(ns)) {
+                    toAdd.emplace_back(ns, s);
                 }
             }
-            for (auto& [ns, idx] : toAdd) dp[ns] = idx;
-
-            if (dp.count(target)) break; // tìm được rồi, dừng sớm
+            for (auto& [ns, s] : toAdd) {
+                reached[ns] = true;
+                parentSum[ns] = s;
+                parentIdx[ns] = i;
+            }
+            if (reached.count(target)) found = true;
         }
 
-        if (!dp.count(target))
-            return Solution::makeNotFound(target);
+        if (!found) return Solution::makeNotFound(target);
 
-        // Trace ngược để lấy tập con
+        // Trace nguoc lay tap con va index chinh xac
         vector<long long> chosen;
         vector<int>       indices;
         long long cur = target;
         while (cur != 0) {
-            long long prev = parent[cur];
-            long long elem = cur - prev;
-            chosen.push_back(elem);
-            // Tìm chỉ số phần tử trong mảng gốc (chưa dùng)
-            for (int i = 0; i < n; ++i) {
-                if (elems[i] == elem) {
-                    // Kiểm tra không trùng chỉ số
-                    bool used = false;
-                    for (int j : indices) if (j == i) { used = true; break; }
-                    if (!used) { indices.push_back(i); break; }
-                }
-            }
+            long long prev = parentSum[cur];
+            int idx = parentIdx[cur];
+            chosen.push_back(elems[idx]);
+            indices.push_back(idx);
             cur = prev;
         }
         return Solution::makeFound(target, chosen, indices);

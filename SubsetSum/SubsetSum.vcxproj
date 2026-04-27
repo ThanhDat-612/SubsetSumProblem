@@ -134,6 +134,7 @@
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="DynamicProgrammingSolver.cpp" />
     <ClCompile Include="ExperimentRunner.cpp" />
+    <ClCompile Include="GreedySolver.cpp" />
     <ClCompile Include="InteractiveCLI.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MeetInTheMiddleSolver.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="DynamicProgrammingSolver.h" />
     <ClInclude Include="ExperimentRunner.h" />
+    <ClInclude Include="GreedySolver.h" />
     <ClInclude Include="InteractiveCLI.h" />
     <ClInclude Include="MeetInTheMiddleSolver.h" />
     <ClInclude Include="PerformanceAnalyzer.h" />

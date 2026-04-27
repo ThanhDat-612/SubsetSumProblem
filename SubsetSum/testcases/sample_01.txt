@@ -1,0 +1,5 @@
+15 22 14 26 32 9 16 8 (input)
+53 (target)
+15 22 16 (result)
+22 14 9 8 (result)
+15 14 16 8 (result)
