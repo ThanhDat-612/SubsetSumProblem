@@ -2,8 +2,8 @@
 
 Solution BruteForceSolver::doSolve(const Dataset& ds){
     const auto& elems = ds.elements();
-    int n = ds.size();
-    long long target = ds.target();
+    const int n = ds.size();
+    const long long target = ds.target();
     
     vector<vector<long long>> allChosen;
     vector<vector<int>> allIndices;

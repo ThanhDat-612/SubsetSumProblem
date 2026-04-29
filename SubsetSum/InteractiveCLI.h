@@ -37,6 +37,9 @@ private:
     Dataset currentDataset_;
     bool hasDataset_ = false;
 
+    // ═══════════════════════════════════════════════════════
+    //  Tien ich hien thi
+    // ═══════════════════════════════════════════════════════
     void clearScreen() const {
 #ifdef _WIN32
         system("cls");
@@ -51,7 +54,7 @@ private:
 
     void printHeader() const {
         printLine('=');
-        cout << "  SUBSET SUM SOLVER  \n";
+        cout << "        SUBSET SUM SOLVER\n";
         printLine('=');
     }
 
@@ -61,8 +64,13 @@ private:
         cin.get();
     }
 
-    Dataset inputDataset() const {
-        cout << "\n  Nhap cac phan tu (so nguyen, cach nhau bang dau cach):\n  > ";
+    // ═══════════════════════════════════════════════════════
+    //  Nhap / chon dataset  (dung chung cho option 1 va 2)
+    // ═══════════════════════════════════════════════════════
+
+    // Nhap thu cong tu ban phim
+    Dataset inputManual() const {
+        cout << "\n  Nhap cac phan tu (so nguyen, cach nhau dau cach):\n  > ";
         string line;
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         getline(cin, line);
@@ -73,10 +81,9 @@ private:
         while (iss >> x) elements.push_back(x);
 
         if (elements.empty()) {
-            cout << "  [!] Khong co phan tu nao, dung dataset cu.\n";
+            cout << "  [!] Khong co phan tu nao.\n";
             return currentDataset_;
         }
-
         long long target;
         cout << "  Nhap target: ";
         cin >> target;
@@ -90,222 +97,266 @@ private:
         return Dataset(elements, target, name);
     }
 
+    // Lay danh sach file .txt trong folder
+    vector<fs::path> listTxtFiles(const fs::path& folder) const {
+        vector<fs::path> files;
+        if (!fs::exists(folder) || !fs::is_directory(folder)) return files;
+        for (const auto& e : fs::directory_iterator(folder)) {
+            if (e.is_regular_file() && e.path().extension() == ".txt")
+                files.push_back(e.path());
+        }
+        sort(files.begin(), files.end());
+        return files;
+    }
+
+    // Resolve duong dan: thu file truc tiep, roi them .txt, roi folder mac dinh
+    fs::path resolvePath(const string& input) const {
+        fs::path p(input);
+        if (fs::exists(p)) return p;
+        fs::path withExt = p; withExt.replace_extension(".txt");
+        if (fs::exists(withExt)) return withExt;
+        return p; // tra ve nguyen goc, goi se kiem tra lai
+    }
+
+    // Parse file testcase: dong 1 = elements, dong 2 = target, dong 3+ = expected
     vector<long long> extractIntegers(const string& line) const {
         vector<long long> out;
-        static const regex kIntPattern(R"([-]?\d+)");
-        sregex_iterator it(line.begin(), line.end(), kIntPattern);
-        sregex_iterator endIt;
-        for (; it != endIt; ++it) {
-            out.push_back(stoll(it->str()));
-        }
+        static const regex kPat(R"([-]?\d+)");
+        sregex_iterator it(line.begin(), line.end(), kPat), end;
+        for (; it != end; ++it) out.push_back(stoll(it->str()));
         return out;
     }
 
     TestCaseFileData parseTestCaseFile(const fs::path& path) const {
         ifstream fin(path);
-        if (!fin.is_open()) {
-            throw runtime_error("Khong mo duoc file testcase: " + path.string());
-        }
+        if (!fin.is_open())
+            throw runtime_error("Khong mo duoc: " + path.string());
 
+        vector<string> lines;
         string line;
-        vector<string> nonEmptyLines;
         while (getline(fin, line)) {
             if (!line.empty() && line.back() == '\r') line.pop_back();
-            if (!line.empty()) nonEmptyLines.push_back(line);
+            if (!line.empty()) lines.push_back(line);
         }
+        if (lines.size() < 2)
+            throw runtime_error("File phai co it nhat 2 dong (elements, target).");
 
-        if (nonEmptyLines.size() < 3) {
-            throw runtime_error("File testcase phai co it nhat 3 dong: input, target, expected result.");
-        }
-
-        vector<long long> elements = extractIntegers(nonEmptyLines[0]);
-        vector<long long> targetVec = extractIntegers(nonEmptyLines[1]);
-        if (elements.empty() || targetVec.empty()) {
-            throw runtime_error("Khong doc duoc input/target tu file testcase.");
-        }
+        auto elems = extractIntegers(lines[0]);
+        auto tgVec = extractIntegers(lines[1]);
+        if (elems.empty() || tgVec.empty())
+            throw runtime_error("Khong doc duoc elements / target.");
 
         vector<vector<long long>> expected;
-        for (size_t i = 2; i < nonEmptyLines.size(); ++i) {
-            auto subset = extractIntegers(nonEmptyLines[i]);
-            if (!subset.empty()) expected.push_back(move(subset));
+        for (size_t i = 2; i < lines.size(); ++i) {
+            auto sub = extractIntegers(lines[i]);
+            if (!sub.empty()) expected.push_back(move(sub));
         }
-        if (expected.empty()) {
-            throw runtime_error("Testcase bat buoc phai co expected output (cac dong result).");
-        }
-
-        string dsName = path.filename().string();
-        return { Dataset(elements, targetVec[0], dsName), expected };
+        return { Dataset(elems, tgVec[0], path.filename().string()), expected };
     }
 
-    string canonicalSubset(const vector<long long>& subset) const {
-        vector<long long> tmp = subset;
-        sort(tmp.begin(), tmp.end());
-        ostringstream oss;
-        for (auto x : tmp) oss << x << ",";
-        return oss.str();
-    }
+    // Cho nguoi dung chon mot file tu folder testcases
+    // Tra ve dataset da chon, hoac empty optional neu huy
+    bool chooseFromFolder(const string& folderHint, Dataset& out) {
+        string folder = folderHint.empty() ? "testcases" : folderHint;
+        auto files = listTxtFiles(folder);
 
-    void printExpectedCheck(const Solution& sol,
-        const vector<vector<long long>>& expected) const {
-        set<string> expectedSet;
-        for (const auto& e : expected) expectedSet.insert(canonicalSubset(e));
-
-        set<string> actualSet;
-        for (const auto& a : sol.allElements()) actualSet.insert(canonicalSubset(a));
-
-        int matched = 0;
-        for (const auto& key : expectedSet) {
-            if (actualSet.count(key)) matched++;
+        if (files.empty()) {
+            cout << "  [!] Khong co file .txt nao trong: " << folder << "\n";
+            cout << "  Working dir: " << fs::current_path().string() << "\n";
+            return false;
         }
 
-        cout << "  [Check] Tim thay " << matched << "/" << expectedSet.size()
-            << " nghiem ky vong trong ket qua brute force.\n";
-    }
+        cout << "\n  Cac file trong '" << folder << "':\n";
+        for (int i = 0; i < (int)files.size(); ++i)
+            cout << "    " << (i + 1) << ". " << files[i].filename().string() << "\n";
+        cout << "  Chon so (0 = huy): ";
+        int idx; cin >> idx;
+        if (idx < 1 || idx >(int)files.size()) return false;
 
-    // Kiem tra PASS/FAIL theo kieu solver:
-    // - Solver tim TAT CA nghiem (BruteForce, Backtracking, MITM):
-    //     actualSet phai bang dung expectedSet
-    // - Solver chi tim MOT nghiem (DP):
-    //     chi can nghiem tim duoc nam trong expectedSet la PASS
-    bool isExpectedMatched(const Solution& sol,
-        const vector<vector<long long>>& expected) const {
-        if (!sol.found()) return false;
-
-        set<string> expectedSet;
-        for (const auto& e : expected) expectedSet.insert(canonicalSubset(e));
-
-        set<string> actualSet;
-        for (const auto& a : sol.allElements()) actualSet.insert(canonicalSubset(a));
-
-        // Neu solver chi tra ve 1 nghiem → kiem tra nghiem do co trong expected
-        if (actualSet.size() == 1) {
-            return expectedSet.count(*actualSet.begin()) > 0;
-        }
-        // Neu solver tra ve nhieu nghiem → phai khop hoan toan
-        return actualSet == expectedSet;
-    }
-
-    // ── Chay mot file testcase cu the ─────────────────────
-    void runOneTestCaseFile(const fs::path& p) {
-        printLine('-', 64);
-        cout << "  File: " << p.filename().string() << "\n";
         try {
-            auto tc = parseTestCaseFile(p);
-            currentDataset_ = tc.dataset;
-            hasDataset_ = true;
-
-            cout << "  Input  n=" << currentDataset_.size()
-                << ", target=" << currentDataset_.target() << "\n";
-
-            cout << "  Expected (" << tc.expectedResults.size() << " nghiem):\n";
-            for (size_t i = 0; i < tc.expectedResults.size(); ++i) {
-                cout << "    #" << (i + 1) << ": { ";
-                for (auto x : tc.expectedResults[i]) cout << x << " ";
-                cout << "}\n";
-            }
-
-            analyzer_.clearRecords();
-            auto allResults = analyzer_.runAll(currentDataset_);
-            for (const auto& sol : allResults) {
-                bool passExpected = isExpectedMatched(sol, tc.expectedResults);
-                cout << "  [Expected] " << sol.solverName() << ": "
-                    << (passExpected ? "PASS" : "FAIL") << "\n";
-            }
+            auto tc = parseTestCaseFile(files[idx - 1]);
+            out = tc.dataset;
+            cout << "  Da tai: " << out.name()
+                << "  n=" << out.size()
+                << "  target=" << out.target() << "\n";
+            return true;
         }
         catch (const exception& ex) {
-            cout << "  [!] Loi testcase: " << ex.what() << "\n";
+            cout << "  [!] Loi doc file: " << ex.what() << "\n";
+            return false;
         }
     }
 
-    // ── Chuc nang 1 ───────────────────────────────────────
+    // ── Menu con: chon nguon du lieu ─────────────────────
+    //   1. Tu nhap
+    //   2. Chon file tu folder testcases
+    //   3. Nhap duong dan file / folder cu the
+    //   (neu da co dataset cu thi them lua chon dung lai)
+    // Tra ve true neu co dataset hop le
+    bool selectDataset() {
+        printLine();
+        cout << "  CHON NGUON DU LIEU\n";
+        printLine();
+
+        if (hasDataset_) {
+            cout << "  Dataset hien tai: \"" << currentDataset_.name()
+                << "\"  n=" << currentDataset_.size()
+                << "  target=" << currentDataset_.target() << "\n\n";
+            cout << "  1. Dung lai dataset hien tai\n"
+                << "  2. Tu nhap tay\n"
+                << "  3. Chon file tu folder testcases\n"
+                << "  4. Nhap duong dan file cu the\n"
+                << "  0. Huy\n"
+                << "\n  Chon: ";
+            int c; cin >> c;
+            switch (c) {
+            case 0: return false;
+            case 1: return true;
+            case 2:
+                currentDataset_ = inputManual();
+                hasDataset_ = true;
+                return true;
+            case 3:
+                if (chooseFromFolder("testcases", currentDataset_)) {
+                    hasDataset_ = true; return true;
+                }
+                return false;
+            case 4: {
+                cout << "  Nhap duong dan file (.txt): ";
+                string path; cin.ignore(); getline(cin, path);
+                fs::path rp = resolvePath(path);
+                if (!fs::exists(rp) || !fs::is_regular_file(rp)) {
+                    cout << "  [!] Khong tim thay file: " << path << "\n";
+                    cout << "  Working dir: " << fs::current_path().string() << "\n";
+                    return false;
+                }
+                try {
+                    auto tc = parseTestCaseFile(rp);
+                    currentDataset_ = tc.dataset;
+                    hasDataset_ = true;
+                    return true;
+                }
+                catch (const exception& ex) {
+                    cout << "  [!] " << ex.what() << "\n";
+                    return false;
+                }
+            }
+            default: return false;
+            }
+        }
+        else {
+            // Chua co dataset: khong co lua chon "dung lai"
+            cout << "  1. Tu nhap tay\n"
+                << "  2. Chon file tu folder testcases\n"
+                << "  3. Nhap duong dan file cu the\n"
+                << "  0. Huy\n"
+                << "\n  Chon: ";
+            int c; cin >> c;
+            switch (c) {
+            case 0: return false;
+            case 1:
+                currentDataset_ = inputManual();
+                hasDataset_ = true;
+                return true;
+            case 2:
+                if (chooseFromFolder("testcases", currentDataset_)) {
+                    hasDataset_ = true; return true;
+                }
+                return false;
+            case 3: {
+                cout << "  Nhap duong dan file (.txt): ";
+                string path; cin.ignore(); getline(cin, path);
+                fs::path rp = resolvePath(path);
+                if (!fs::exists(rp) || !fs::is_regular_file(rp)) {
+                    cout << "  [!] Khong tim thay file: " << path << "\n";
+                    cout << "  Working dir: " << fs::current_path().string() << "\n";
+                    return false;
+                }
+                try {
+                    auto tc = parseTestCaseFile(rp);
+                    currentDataset_ = tc.dataset;
+                    hasDataset_ = true;
+                    return true;
+                }
+                catch (const exception& ex) {
+                    cout << "  [!] " << ex.what() << "\n";
+                    return false;
+                }
+            }
+            default: return false;
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  Option 1: Chay mot thuat toan
+    // ═══════════════════════════════════════════════════════
     void menuRunSingle() {
         printLine();
-        cout << "  [1] CHON THUAT TOAN\n";
+        cout << "  [1] CHAY MOT THUAT TOAN\n";
         printLine();
 
-        for (int i = 0; i < (int)solvers_.size(); i++) {
-            cout << "  " << (i + 1) << ". "
-                << solvers_[i]->name()
-                << "  [" << solvers_[i]->complexity() << "]\n";
-        }
+        // Chon solver
+        cout << "  Cac thuat toan:\n";
+        for (int i = 0; i < (int)solvers_.size(); ++i)
+            cout << "    " << (i + 1) << ". "
+            << left << setw(20) << solvers_[i]->name()
+            << "[" << solvers_[i]->complexity() << "]\n";
+        cout << "\n  Chon so (1-" << solvers_.size() << ", 0 = huy): ";
+        int choice; cin >> choice;
+        if (choice < 1 || choice >(int)solvers_.size()) return;
 
-        cout << "\n  Chon so (1-" << solvers_.size() << "): ";
-        int choice;
-        cin >> choice;
+        // Chon du lieu
+        if (!selectDataset()) { pauseScreen(); return; }
 
-        if (choice < 1 || choice >(int)solvers_.size()) {
-            cout << "  [!] Lua chon khong hop le.\n";
-            pauseScreen(); return;
-        }
-
-        cout << "\n  Su dung dataset hien tai?";
-        if (hasDataset_) {
-            cout << " (\"" << currentDataset_.name()
-                << "\", n=" << currentDataset_.size()
-                << ", target=" << currentDataset_.target() << ")";
-        }
-        cout << "\n  (y = dung lai / n = nhap moi): ";
-        char useOld;
-        cin >> useOld;
-
-        if (!hasDataset_ || useOld == 'n' || useOld == 'N') {
-            currentDataset_ = inputDataset();
-            hasDataset_ = true;
-        }
-
-        auto& solver = *solvers_[choice - 1];
         printLine();
-        cout << "  Dang chay " << solver.name() << "...\n";
+        cout << "  Solver : " << solvers_[choice - 1]->name() << "\n"
+            << "  Dataset: " << currentDataset_.name()
+            << "  n=" << currentDataset_.size()
+            << "  target=" << currentDataset_.target() << "\n";
         printLine();
 
-        Solution sol = solver.solve(currentDataset_);
+        Solution sol = solvers_[choice - 1]->solve(currentDataset_);
         sol.print();
         pauseScreen();
     }
 
-    // ── Chuc nang 2 ───────────────────────────────────────
+    // ═══════════════════════════════════════════════════════
+    //  Option 2: So sanh tat ca thuat toan
+    // ═══════════════════════════════════════════════════════
     void menuRunCompare() {
         printLine();
         cout << "  [2] SO SANH TAT CA THUAT TOAN\n";
         printLine();
 
-        cout << "  Su dung dataset hien tai?";
-        if (hasDataset_) {
-            cout << " (\"" << currentDataset_.name()
-                << "\", n=" << currentDataset_.size()
-                << ", target=" << currentDataset_.target() << ")";
-        }
-        cout << "\n  (y = dung lai / n = nhap moi): ";
-        char useOld;
-        cin >> useOld;
-
-        if (!hasDataset_ || useOld == 'n' || useOld == 'N') {
-            currentDataset_ = inputDataset();
-            hasDataset_ = true;
-        }
+        if (!selectDataset()) { pauseScreen(); return; }
 
         analyzer_.clearRecords();
         vector<Solution> results = analyzer_.runAll(currentDataset_);
 
+        // Tim solver nhanh nhat (bo Greedy vi khong dam bao dung)
         double fastest = numeric_limits<double>::max();
         string fastestName;
         for (const auto& sol : results) {
+            if (sol.solverName() == "Greedy") continue;
             if (sol.elapsedMs() < fastest) {
                 fastest = sol.elapsedMs();
                 fastestName = sol.solverName();
             }
         }
-        cout << "\n  Nhanh nhat: " << fastestName
-            << " (" << fastest << " ms)\n";
+        cout << "\n  => Nhanh nhat (trong cac solver chinh xac): "
+            << fastestName << " (" << fixed << setprecision(4) << fastest << " ms)\n";
 
+        // In tat ca nghiem cua solver chinh xac dau tien tim duoc
         for (const auto& sol : results) {
+            if (sol.solverName() == "Greedy") continue;
             if (sol.found()) {
-                cout << "\n  " << sol.solverName() << " tim duoc "
-                    << sol.solutionCount() << " nghiem.\n";
+                cout << "\n  Tat ca nghiem (theo " << sol.solverName() << ", "
+                    << sol.solutionCount() << " nghiem):\n";
                 for (size_t i = 0; i < sol.allElements().size(); ++i) {
-                    cout << "  #" << (i + 1) << ": { ";
+                    cout << "    #" << (i + 1) << ": { ";
                     for (auto x : sol.allElements()[i]) cout << x << " ";
-                    cout << "} -> tong = " << currentDataset_.target() << "\n";
+                    cout << "}\n";
                 }
                 break;
             }
@@ -314,136 +365,132 @@ private:
         pauseScreen();
     }
 
-    // ── Chuc nang 4: FIX - Nhan file hoac folder ──────────
-    void menuRunSampleTestcases() {
-        printLine();
-        cout << "  [4] CHAY CAC TESTCASE MAU\n";
-        printLine();
+    // ═══════════════════════════════════════════════════════
+    //  Option 3: Chay testcase mau (voi check expected)
+    // ═══════════════════════════════════════════════════════
+    string canonicalSubset(const vector<long long>& s) const {
+        vector<long long> tmp = s;
+        sort(tmp.begin(), tmp.end());
+        ostringstream oss;
+        for (auto x : tmp) oss << x << ",";
+        return oss.str();
+    }
 
-        cout << "  Nhap ten FILE (.txt) hoac FOLDER testcase\n"
-            << "  Vi du: sample_01   hoac   testcases\n"
-            << "  (Enter = folder './testcases'): ";
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        string input;
-        getline(cin, input);
-        if (input.empty()) input = "testcases";
+    bool isExpectedMatched(const Solution& sol,
+        const vector<vector<long long>>& expected) const {
+        if (!sol.found()) return false;
+        set<string> expSet;
+        for (const auto& e : expected) expSet.insert(canonicalSubset(e));
+        set<string> actSet;
+        for (const auto& a : sol.allElements()) actSet.insert(canonicalSubset(a));
+        // Solver 1 nghiem (DP, Greedy): chi can 1 nghiem nam trong expected
+        if (actSet.size() == 1) return expSet.count(*actSet.begin()) > 0;
+        // Solver nhieu nghiem: phai khop hoan toan
+        return actSet == expSet;
+    }
 
-        fs::path inputPath(input);
+    void runOneTestCaseFile(const fs::path& p) {
+        printLine('-', 64);
+        cout << "  File  : " << p.filename().string() << "\n";
+        try {
+            auto tc = parseTestCaseFile(p);
+            currentDataset_ = tc.dataset;
+            hasDataset_ = true;
 
-        // Truong hop 1: la file ton tai
-        if (fs::exists(inputPath) && fs::is_regular_file(inputPath)) {
-            runOneTestCaseFile(inputPath);
-            pauseScreen();
-            return;
-        }
+            cout << "  Input : n=" << currentDataset_.size()
+                << ", target=" << currentDataset_.target() << "\n";
 
-        // Truong hop 2: them .txt va thu lai
-        if (!fs::exists(inputPath)) {
-            fs::path withExt = inputPath;
-            withExt.replace_extension(".txt");
-            if (fs::exists(withExt) && fs::is_regular_file(withExt)) {
-                runOneTestCaseFile(withExt);
-                pauseScreen();
-                return;
-            }
-        }
-
-        // Truong hop 3: la folder
-        if (fs::exists(inputPath) && fs::is_directory(inputPath)) {
-            vector<fs::path> files;
-            for (const auto& e : fs::directory_iterator(inputPath)) {
-                if (e.is_regular_file() && e.path().extension() == ".txt") {
-                    files.push_back(e.path());
+            if (!tc.expectedResults.empty()) {
+                cout << "  Expected (" << tc.expectedResults.size() << " nghiem):\n";
+                for (size_t i = 0; i < tc.expectedResults.size(); ++i) {
+                    cout << "    #" << (i + 1) << ": { ";
+                    for (auto x : tc.expectedResults[i]) cout << x << " ";
+                    cout << "}\n";
                 }
             }
-            sort(files.begin(), files.end());
-
-            if (files.empty()) {
-                cout << "  [!] Khong co file .txt nao trong folder: " << input << "\n";
-                pauseScreen();
-                return;
+            else {
+                cout << "  (Khong co expected output trong file)\n";
             }
 
-            cout << "  Tim thay " << files.size() << " file testcase.\n";
-            for (const auto& p : files) runOneTestCaseFile(p);
+            analyzer_.clearRecords();
+            auto allResults = analyzer_.runAll(currentDataset_);
+
+            if (!tc.expectedResults.empty()) {
+                cout << "\n  Kiem tra expected:\n";
+                for (const auto& sol : allResults) {
+                    bool pass = isExpectedMatched(sol, tc.expectedResults);
+                    cout << "    " << left << setw(20) << sol.solverName()
+                        << (pass ? "PASS" : "FAIL") << "\n";
+                }
+            }
+        }
+        catch (const exception& ex) {
+            cout << "  [!] Loi: " << ex.what() << "\n";
+        }
+    }
+
+    void menuRunTestcases() {
+        printLine();
+        cout << "  [3] CHAY TESTCASE MAU\n";
+        printLine();
+
+        cout << "  1. Chon file tu folder testcases\n"
+            << "  2. Nhap duong dan file / folder cu the\n"
+            << "  0. Huy\n"
+            << "\n  Chon: ";
+        int c; cin >> c;
+
+        if (c == 0) return;
+
+        if (c == 1) {
+            auto files = listTxtFiles("testcases");
+            if (files.empty()) {
+                cout << "  [!] Khong co file .txt nao trong 'testcases'\n";
+                cout << "  Working dir: " << fs::current_path().string() << "\n";
+                pauseScreen(); return;
+            }
+            cout << "\n  Cac file:\n";
+            for (int i = 0; i < (int)files.size(); ++i)
+                cout << "    " << (i + 1) << ". " << files[i].filename().string() << "\n";
+            cout << "  Chon so (0 = chay tat ca): ";
+            int idx; cin >> idx;
+            if (idx == 0) {
+                for (const auto& f : files) runOneTestCaseFile(f);
+            }
+            else if (idx >= 1 && idx <= (int)files.size()) {
+                runOneTestCaseFile(files[idx - 1]);
+            }
+            pauseScreen(); return;
+        }
+
+        if (c == 2) {
+            cout << "  Nhap duong dan (file .txt hoac folder): ";
+            string input; cin.ignore(); getline(cin, input);
+            fs::path rp = resolvePath(input);
+
+            if (fs::exists(rp) && fs::is_regular_file(rp)) {
+                runOneTestCaseFile(rp);
+                pauseScreen(); return;
+            }
+            if (fs::exists(rp) && fs::is_directory(rp)) {
+                auto files = listTxtFiles(rp);
+                if (files.empty()) {
+                    cout << "  [!] Khong co file .txt nao trong folder.\n";
+                }
+                else {
+                    for (const auto& f : files) runOneTestCaseFile(f);
+                }
+                pauseScreen(); return;
+            }
+            cout << "  [!] Khong tim thay: " << input << "\n";
+            cout << "  Working dir: " << fs::current_path().string() << "\n";
             pauseScreen();
-            return;
         }
-
-        // Khong tim thay - in working dir de debug
-        cout << "  [!] Khong tim thay: \"" << input << "\"\n";
-        cout << "  Working directory hien tai: " << fs::current_path().string() << "\n";
-        cout << "  => Hay dat file/folder vao dung thu muc tren.\n";
-        pauseScreen();
     }
 
-    // ── Chuc nang 3 ───────────────────────────────────────
-    void menuViewData() {
-        printLine();
-        cout << "  [3] XEM DATA INPUT\n";
-        printLine();
-
-        if (!hasDataset_) {
-            cout << "  Chua co dataset. Nhap moi:\n";
-            currentDataset_ = inputDataset();
-            hasDataset_ = true;
-        }
-
-        const auto& elems = currentDataset_.elements();
-        int n = currentDataset_.size();
-
-        cout << "\n  Ten      : " << currentDataset_.name() << "\n"
-            << "  So phan tu: " << n << "\n"
-            << "  Target   : " << currentDataset_.target() << "\n";
-
-        long long total = 0, mn = elems[0], mx = elems[0];
-        for (auto x : elems) { total += x; mn = min(mn, x); mx = max(mx, x); }
-        double avg = (double)total / n;
-        int pos = 0, neg = 0, zer = 0;
-        for (auto x : elems) { if (x > 0) pos++; else if (x < 0) neg++; else zer++; }
-
-        printLine('-', 40);
-        cout << "  Tong     : " << total << "\n"
-            << "  Trung binh: " << avg << "\n"
-            << "  Min / Max: " << mn << " / " << mx << "\n"
-            << "  Duong / Am / Zero: " << pos << " / " << neg << " / " << zer << "\n";
-
-        printLine('-', 40);
-        cout << "  Cac phan tu:\n  ";
-        for (int i = 0; i < n; i++) {
-            cout << "[" << i << "]=" << elems[i];
-            if (i < n - 1) cout << "  ";
-            if ((i + 1) % 8 == 0 && i < n - 1) cout << "\n  ";
-        }
-        cout << "\n";
-
-        printLine('-', 40);
-        cout << "  Phan bo gia tri (histogram):\n";
-        const int bins = 8;
-        long long range = mx - mn;
-        vector<int> counts(bins, 0);
-        for (auto x : elems) {
-            int b = (range == 0) ? 0
-                : (int)min((long long)(bins - 1), (x - mn) * bins / (range + 1));
-            counts[b]++;
-        }
-        int cmax = *max_element(counts.begin(), counts.end());
-        for (int b = 0; b < bins; b++) {
-            long long lo = mn + (long long)b * (range + 1) / bins;
-            long long hi = mn + (long long)(b + 1) * (range + 1) / bins - 1;
-            int bar = cmax > 0 ? counts[b] * 20 / cmax : 0;
-            cout << "  " << setw(5) << lo << " - " << setw(5) << hi
-                << " | " << string(bar, '#') << " (" << counts[b] << ")\n";
-        }
-
-        printLine('-', 40);
-        cout << "  Nhap dataset moi? (y/n): ";
-        char c; cin >> c;
-        if (c == 'y' || c == 'Y') currentDataset_ = inputDataset();
-
-        pauseScreen();
-    }
-
+    // ═══════════════════════════════════════════════════════
+    //  Menu chinh
+    // ═══════════════════════════════════════════════════════
     void printMenu() const {
         printHeader();
         if (hasDataset_) {
@@ -453,10 +500,9 @@ private:
             printLine('-', 56);
         }
         cout << "\n"
-            << "  1.  Chay mot thuat toan tu chon\n"
-            << "  2.  Chay va so sanh tat ca thuat toan\n"
-            << "  3.  Xem data input\n"
-            << "  4.  Chay cac testcase mau (.txt)\n"
+            << "  1.  Chay mot thuat toan\n"
+            << "  2.  So sanh tat ca thuat toan\n"
+            << "  3.  Chay testcase mau\n"
             << "\n"
             << "  0.  Thoat\n"
             << "\n"
@@ -479,13 +525,11 @@ public:
             clearScreen();
             printMenu();
             cin >> choice;
-
             switch (choice) {
-            case 1: clearScreen(); menuRunSingle();          break;
-            case 2: clearScreen(); menuRunCompare();         break;
-            case 3: clearScreen(); menuViewData();           break;
-            case 4: clearScreen(); menuRunSampleTestcases(); break;
-            case 0: cout << "\n  Ket thuc!\n\n";            break;
+            case 1: clearScreen(); menuRunSingle();    break;
+            case 2: clearScreen(); menuRunCompare();   break;
+            case 3: clearScreen(); menuRunTestcases(); break;
+            case 0: cout << "\n  Ket thuc!\n\n"; break;
             default:
                 cout << "  [!] Lua chon khong hop le.\n";
                 pauseScreen();

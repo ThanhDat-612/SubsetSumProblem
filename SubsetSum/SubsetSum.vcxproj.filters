@@ -51,9 +51,6 @@
     <ClCompile Include="InteractiveCLI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AppUI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GreedySolver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -93,9 +90,6 @@
       <Filter>Resource Files</Filter>
     </ClInclude>
     <ClInclude Include="InteractiveCLI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AppUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GreedySolver.h">

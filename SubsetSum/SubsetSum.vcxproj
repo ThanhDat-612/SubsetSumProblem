@@ -127,7 +127,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AppUI.cpp" />
     <ClCompile Include="BacktrackingSolver.cpp" />
     <ClCompile Include="BruteforceSolver.cpp" />
     <ClCompile Include="DataLoader.cpp" />
@@ -143,7 +142,6 @@
     <ClCompile Include="SubsetSumSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AppUI.h" />
     <ClInclude Include="BacktrackingSolver.h" />
     <ClInclude Include="BruteforceSolver.h" />
     <ClInclude Include="DataLoader.h" />
