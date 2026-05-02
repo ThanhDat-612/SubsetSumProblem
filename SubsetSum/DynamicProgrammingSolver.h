@@ -48,6 +48,23 @@ private:
                     parentPrev[pos] = s;
                     parentIdx[pos] = i;
                     newSums.push_back(ns);
+                    if (ns == target) {
+                        activeSums.insert(activeSums.end(), newSums.begin(), newSums.end());
+                        vector<long long> chosen;
+                        vector<int> indices;
+                        long long cur = target;
+                        while (cur != 0) {
+                            const size_t cpos = static_cast<size_t>(cur + offset);
+                            const int idx = parentIdx[cpos];
+                            if (idx < 0) break;
+                            chosen.push_back(elems[idx]);
+                            indices.push_back(idx);
+                            cur = parentPrev[cpos];
+                        }
+                        reverse(chosen.begin(), chosen.end());
+                        reverse(indices.begin(), indices.end());
+                        return Solution::makeFound(target, chosen, indices);
+                    }
                 }
             }
 
@@ -102,6 +119,24 @@ private:
             for (const auto s : reached) {
                 const long long ns = s + e;
                 if (reached.find(ns) == reached.end() && parentIdx.find(ns) == parentIdx.end()) {
+                    if (ns == target) {
+                        parentPrev[ns] = s;
+                        parentIdx[ns] = i;
+                        reached.insert(ns);
+
+                        vector<long long> chosen;
+                        vector<int> indices;
+                        long long cur = target;
+                        while (cur != 0) {
+                            const int idx = parentIdx[cur];
+                            chosen.push_back(elems[idx]);
+                            indices.push_back(idx);
+                            cur = parentPrev[cur];
+                        }
+                        reverse(chosen.begin(), chosen.end());
+                        reverse(indices.begin(), indices.end());
+                        return Solution::makeFound(target, chosen, indices);
+                    }
                     toAdd.emplace_back(ns, s);
                 }
             }

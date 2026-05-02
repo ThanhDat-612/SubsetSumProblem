@@ -63,6 +63,12 @@ private:
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
     }
+    bool readIntSafe(int& out) const {
+        if (cin >> out) return true;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        return false;
+    }
 
     // ═══════════════════════════════════════════════════════
     //  Nhap / chon dataset  (dung chung cho option 1 va 2)
@@ -287,6 +293,57 @@ private:
             }
         }
     }
+    void printSubsetLine(const vector<long long>& subset, long long target) const {
+        long long sum = 0;
+        for (auto x : subset) {
+            cout << x << " ";
+            sum += x;
+        }
+        if (subset.empty()) cout << "{}";
+        if (sum == target) cout << "[DUNG]";
+        cout << "\n";
+    }
+
+    void visualizeExhaustive(const Dataset& ds) const {
+        const auto& elems = ds.elements();
+        const long long target = ds.target();
+        const int n = ds.size();
+        const int total = (1 << n);
+
+        cout << "\n  [Visualize] Liet ke cac tap con theo thu tu brute-force:\n";
+        bool found = false;
+        vector<long long> firstFound;
+        long long currentSum = 0;
+
+        for (int mask = 1; mask < total; ++mask) {
+            vector<long long> subset;
+            subset.reserve(n);
+            long long sum = 0;
+            for (int i = 0; i < n; ++i) {
+                if (mask & (1 << i)) {
+                    subset.push_back(elems[i]);
+                    sum += elems[i];
+                }
+            }
+            currentSum = sum;
+            printSubsetLine(subset, target);
+            if (!found && sum == target) {
+                found = true;
+                firstFound = subset;
+            }
+        }
+
+        cout << "\n  Ket luan visualize: ";
+        if (!found) {
+            cout << "khong tim thay tap con co tong = " << target << ".\n";
+            cout << "  currentSum (tap con cuoi cung da duyet) = " << currentSum << "\n";
+            return;
+        }
+
+        cout << "tim thay tong = " << target << " voi tap con dau tien: { ";
+        for (auto x : firstFound) cout << x << " ";
+        cout << "}\n";
+    }
 
     // ═══════════════════════════════════════════════════════
     //  Option 1: Chay mot thuat toan
@@ -315,58 +372,26 @@ private:
             << "  n=" << currentDataset_.size()
             << "  target=" << currentDataset_.target() << "\n";
         printLine();
-
+        cout << "  Visualize qua trinh duyet? (y/n): ";
+        char viz; cin >> viz;
+        if (viz == 'y' || viz == 'Y') {
+            const string& solverName = solvers_[choice - 1]->name();
+            if (solverName == "BruteForce" || solverName == "Backtracking") {
+                visualizeExhaustive(currentDataset_);
+                printLine();
+            }
+            else {
+                cout << "  [!] Visualize hien chi ho tro BruteForce/Backtracking.\n";
+                printLine();
+            }
+        }
         Solution sol = solvers_[choice - 1]->solve(currentDataset_);
         sol.print();
         pauseScreen();
     }
 
     // ═══════════════════════════════════════════════════════
-    //  Option 2: So sanh tat ca thuat toan
-    // ═══════════════════════════════════════════════════════
-    void menuRunCompare() {
-        printLine();
-        cout << "  [2] SO SANH TAT CA THUAT TOAN\n";
-        printLine();
-
-        if (!selectDataset()) { pauseScreen(); return; }
-
-        analyzer_.clearRecords();
-        vector<Solution> results = analyzer_.runAll(currentDataset_);
-
-        // Tim solver nhanh nhat (bo Greedy vi khong dam bao dung)
-        double fastest = numeric_limits<double>::max();
-        string fastestName;
-        for (const auto& sol : results) {
-            if (sol.solverName() == "Greedy") continue;
-            if (sol.elapsedMs() < fastest) {
-                fastest = sol.elapsedMs();
-                fastestName = sol.solverName();
-            }
-        }
-        cout << "\n  => Nhanh nhat (trong cac solver chinh xac): "
-            << fastestName << " (" << fixed << setprecision(4) << fastest << " ms)\n";
-
-        // In tat ca nghiem cua solver chinh xac dau tien tim duoc
-        for (const auto& sol : results) {
-            if (sol.solverName() == "Greedy") continue;
-            if (sol.found()) {
-                cout << "\n  Tat ca nghiem (theo " << sol.solverName() << ", "
-                    << sol.solutionCount() << " nghiem):\n";
-                for (size_t i = 0; i < sol.allElements().size(); ++i) {
-                    cout << "    #" << (i + 1) << ": { ";
-                    for (auto x : sol.allElements()[i]) cout << x << " ";
-                    cout << "}\n";
-                }
-                break;
-            }
-        }
-
-        pauseScreen();
-    }
-
-    // ═══════════════════════════════════════════════════════
-    //  Option 3: Chay testcase mau (voi check expected)
+    //  Option 2: Chay testcase mau (voi check expected)
     // ═══════════════════════════════════════════════════════
     string canonicalSubset(const vector<long long>& s) const {
         vector<long long> tmp = s;
@@ -431,14 +456,20 @@ private:
 
     void menuRunTestcases() {
         printLine();
-        cout << "  [3] CHAY TESTCASE MAU\n";
+        cout << "  [2] CHAY TESTCASE MAU\n";
         printLine();
 
         cout << "  1. Chon file tu folder testcases\n"
             << "  2. Nhap duong dan file / folder cu the\n"
             << "  0. Huy\n"
             << "\n  Chon: ";
-        int c; cin >> c;
+        int c;
+        if (!readIntSafe(c)) {
+            cout << "  [!] Vui long nhap so hop le.\n";
+            pauseScreen();
+            return;
+        }
+
 
         if (c == 0) return;
 
@@ -501,8 +532,7 @@ private:
         }
         cout << "\n"
             << "  1.  Chay mot thuat toan\n"
-            << "  2.  So sanh tat ca thuat toan\n"
-            << "  3.  Chay testcase mau\n"
+            << "  2.  Chay testcase mau\n"
             << "\n"
             << "  0.  Thoat\n"
             << "\n"
@@ -527,8 +557,7 @@ public:
             cin >> choice;
             switch (choice) {
             case 1: clearScreen(); menuRunSingle();    break;
-            case 2: clearScreen(); menuRunCompare();   break;
-            case 3: clearScreen(); menuRunTestcases(); break;
+            case 2: clearScreen(); menuRunTestcases(); break;
             case 0: cout << "\n  Ket thuc!\n\n"; break;
             default:
                 cout << "  [!] Lua chon khong hop le.\n";

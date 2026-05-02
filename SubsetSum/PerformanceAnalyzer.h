@@ -14,10 +14,10 @@
 struct BenchmarkRecord {
     string solverName;
     string datasetName;
-    bool        found;
-    bool        valid;
-    double      elapsedMs;
-    int         datasetSize;
+    bool found;
+    bool  valid;
+    double elapsedMs;
+    int datasetSize;
 };
 
 // ============================================================

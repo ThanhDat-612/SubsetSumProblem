@@ -1,8 +1,8 @@
-#include "PerformanceAnalyzer.h"
+ï»¿#include "PerformanceAnalyzer.h"
 
 
 void PerformanceAnalyzer::addSolver(shared_ptr<SubsetSumSolver> solver) {
-	solvers_.push_back(solver);
+    solvers_.push_back(solver);
 }
 vector<Solution> PerformanceAnalyzer::runAll(const Dataset& ds) {
     vector<Solution> solutions;
@@ -48,7 +48,7 @@ void PerformanceAnalyzer::printSummary()const {
         return;
     }
     cout << "\n====== TONG HOP BENCHMARK ======\n";
-    // Nhóm theo solver
+    // Nhom theo solver
     map<string, vector<double>> times;
     for (const auto& r : records_)
         times[r.solverName].push_back(r.elapsedMs);

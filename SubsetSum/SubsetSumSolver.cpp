@@ -4,11 +4,11 @@ SubsetSumSolver::SubsetSumSolver(const string& name) {
 }
 
 Solution SubsetSumSolver::solve(const Dataset& ds) {
-    auto t0 = chrono::high_resolution_clock::now();
+    auto t0 = chrono::steady_clock::now();
 
     Solution sol = doSolve(ds);
 
-    auto t1 = chrono::high_resolution_clock::now();
+    auto t1 = chrono::steady_clock::now();
     double ms = chrono::duration<double, milli>(t1 - t0).count();
 
     sol.setElapsedMs(ms);
